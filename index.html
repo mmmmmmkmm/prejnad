@@ -1,0 +1,57 @@
+html
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <title>Prejna-generatorn</title>
+  <script defer src="https://jsdelivr.net"></script>
+  <style>
+    body { font-family: sans-serif; text-align: center; margin-top: 40px; background: #f4f4f9; }
+    button { padding: 15px 30px; font-size: 18px; cursor: pointer; background: #ff4757; color: white; border: none; border-radius: 8px; margin-top: 15px; }
+    canvas { max-width: 90%; margin-top: 20px; border: 2px solid #ccc; }
+  </style>
+</head>
+<body>
+
+  <h1>Ladda upp en bild</h1>
+  <input type="file" id="bildUppladdning" accept="image/*"><br>
+  <button id="prejnaKnapp" disabled>Laddar AI...</button><br>
+  <canvas id="resultatCanvas"></canvas>
+
+  <script>
+    const uppladdning = document.getElementById('bildUppladdning');
+    const knapp = document.getElementById('prejnaKnapp');
+    const canvas = document.getElementById('resultatCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    const fastAnsikte = new Image();
+    fastAnsikte.src = 'ansikte.png';
+
+    // Ladda AI-modellen för ansiktsigenkänning
+    Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri('https://github.io')
+    ]).then(() => {
+      knapp.innerText = 'Prejna';
+      knapp.disabled = false;
+    });
+
+    knapp.addEventListener('click', async () => {
+      if (!uppladdning.files[0]) return alert('Välj en bild först!');
+      
+      const img = await faceapi.bufferToImage(uppladdning.files[0]);
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+
+      // Hitta alla ansikten i bilden
+      const detektioner = await faceapi.detectAllFaces(img, new faceapi.TinyFaceDetectorOptions());
+
+      // Klistra in ditt fasta ansikte över varje hittat ansikte
+      detektioner.forEach(det => {
+        const box = det.box;
+        ctx.drawImage(fastAnsikte, box.x, box.y, box.width, box.height);
+      });
+    });
+  </script>
+</body>
+</html>
